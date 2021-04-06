@@ -1,4 +1,4 @@
-# \\\\\\\flutter_esp32_send
+#flutter_esp32_send
 
 A Flutter Project to experiment data send to an ESP32 via BLE
  
