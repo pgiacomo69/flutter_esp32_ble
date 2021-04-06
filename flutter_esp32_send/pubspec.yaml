@@ -1,5 +1,5 @@
-name: flutter_arduino_nano_33_ble
-description: A Flutter application to test nano 33 sense ble connection.
+name: flutter_esp32_send
+description: A Flutter application to test ble data senm.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
@@ -27,9 +27,10 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons:
-  flutter_reactive_ble:
-  google_fonts:
+  cupertino_icons: 1.0.2
+  flutter_reactive_ble: 3.0.0
+  google_fonts: 2.0.0
+  provider: 5.0.0
 
 dev_dependencies:
   flutter_test:

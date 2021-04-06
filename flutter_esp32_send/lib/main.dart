@@ -3,9 +3,21 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_esp32_send/ble_sender.dart';
 
 void main() {
-  runApp(MyApp());
+
+  WidgetsFlutterBinding.ensureInitialized();
+  FlutterReactiveBle ble = FlutterReactiveBle();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => BLESender(ble)),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -34,82 +46,26 @@ class MyHomePage extends StatefulWidget {
 
 enum ColorCommand { cmdRed, cmdBlue, cmdYellow }
 
-class _MyHomePageState extends State<MyHomePage> {
-
-
-
-// ...
-
-  ColorCommand? _character = ColorCommand.cmdBlue;
-
-  final FlutterReactiveBle _ble = FlutterReactiveBle();
-   StreamSubscription? _subscription;
-  StreamSubscription<ConnectionStateUpdate>? _connection;
-  int temperature=0;
-  String temperatureStr = "Hello";
-
-  void _disconnect() async {
-    _subscription?.cancel();
-    if (_connection != null) {
-      await _connection!.cancel();
-      _connection=null;
+extension ParseToString on ColorCommand {
+  String toShortString() {
+    switch (this) {
+      case ColorCommand.cmdRed:
+        return "RED";
+      case ColorCommand.cmdBlue:
+        return "BLUE";
+      case ColorCommand.cmdYellow:
+        return "YELLOW";
     }
   }
+}
 
 
+class _MyHomePageState extends State<MyHomePage> {
+// ...
+  String _serviceId="E5A1C9A8-AB93-11E8-98D0-529269FB1459";
+  String _characteristicId="E5A1CDA4-AB93-11E8-98D0-529269FB1459";
 
-
-
-  void _connettiBLE() {
-    setState(() {
-      temperatureStr = 'Cercando..';
-    });
-    _ble.logLevel=LogLevel.verbose;
-    _subscription = _ble.scanForDevices(
-        withServices: [Uuid.parse("E5A1C9A8-AB93-11E8-98D0-529269FB1459")],
-        scanMode: ScanMode.lowLatency,
-        requireLocationServicesEnabled: true).listen((device) {
-
-     // if (device.name == 'M5Stack-Color') {
-        _subscription!.cancel();
-        if (_connection == null) {
-        print('************* ${device.name} Found! ***************');
-          _connection = _ble.connectToDevice(id: device.id,).listen((
-              connectionState) async {
-            // Handle connection state updates
-            print('************* CONNECTION STATE ${connectionState.connectionState} ***************');
-            if (connectionState.connectionState==DeviceConnectionState.connected) {
-
-              print('************* SCRIVO ***************');
-
-              final characteristic = QualifiedCharacteristic(
-                  serviceId:   Uuid.parse("E5A1C9A8-AB93-11E8-98D0-529269FB1459"),
-                  characteristicId: Uuid.parse("E5A1CDA4-AB93-11E8-98D0-529269FB1459"),
-                  deviceId: device.id,
-
-              );
-              List<int> bytes = _character==ColorCommand.cmdBlue ?  utf8.encode("BLUE") : utf8.encode("YELLOW") ;
-              await _ble.writeCharacteristicWithResponse(characteristic, value: bytes);
-
-              print('************* DISCONNETTO ***************');
-              _disconnect();
-              print('************* DISCONNESSO ***************');
-
-
-            }
-          }, onError: (dynamic error) {
-            // Handle a possible error
-            print(error.toString());
-          });
-
-       // }
-      }
-    }, onError: (error) {
-      print('error!');
-      print(error.toString());
-    });
-  }
-
+  ColorCommand _selectedColor = ColorCommand.cmdBlue;
 
 
 
@@ -123,47 +79,71 @@ class _MyHomePageState extends State<MyHomePage> {
                 end: Alignment.bottomLeft,
                 colors: [Color(0xffffdf6f), Color(0xffeb2d95)])),
         child: Center(
-          child: Column(
-          children: <Widget>[
-            Text(
-              temperatureStr,
-              style: GoogleFonts.anton(
-                  textStyle: Theme.of(context)
-                      .textTheme
-                      .headline3!
-                      .copyWith(color: Colors.white)),
-            ),
-            ListTile(
-              title: const Text('Blue'),
-              leading: Radio(
-                value: ColorCommand.cmdBlue,
-                groupValue: _character,
-                onChanged: (ColorCommand? value) {
-                  setState(() { _character = value; });
-                },
-              ),
-            ),
-            ListTile(
-              title: const Text('Thomas Jefferson'),
-              leading: Radio(
-                value: ColorCommand.cmdYellow,
-                groupValue: _character,
-                onChanged: (ColorCommand? value) {
-                  setState(() { _character = value; });
-                },
-              ),
-            ),
-          ],
+          child: Consumer<BLESender>(builder: (context, bleSender, child) {
+            return Column(
+              children: <Widget>[
+                Text(
+                  bleSender.message,
+                  style: GoogleFonts.anton(
+                      textStyle: Theme.of(context)
+                          .textTheme
+                          .headline4!
+                          .copyWith(color: Colors.white)),
+                ),
+                ListTile(
+                  title: const Text('Blue'),
+                  leading: Radio(
+                    value: ColorCommand.cmdBlue,
+                    groupValue: _selectedColor,
+                    onChanged: (ColorCommand? value) {
+                      setState(() {
+                        _selectedColor = value!;
+                      });
+                    },
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Yellow'),
+                  leading: Radio(
+                    value: ColorCommand.cmdYellow,
+                    groupValue: _selectedColor,
+                    onChanged: (ColorCommand? value) {
+                      setState(() {
+                        _selectedColor = value!;
+                      });
+                    },
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Red'),
+                  leading: Radio(
+                    value: ColorCommand.cmdRed,
+                    groupValue: _selectedColor,
+                    onChanged: (ColorCommand? value) {
+                      setState(() {
+                        _selectedColor = value!;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            );
+          }),
         ),
-       ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: _connettiBLE,
-        tooltip: 'Increment',
+      floatingActionButton: Consumer<BLESender>(builder: (context, bleSender, child) {
+    return FloatingActionButton(
+        onPressed: () async {
+          // await bleSender.bleSendToDevice("F0:08:D1:C7:3B:4E",_serviceId, _characteristicId, _selectedColor.toShortString());
+          await bleSender.bleSend(_serviceId, _characteristicId, _selectedColor.toShortString());
+        },
+        tooltip: 'Send',
         backgroundColor: Color(0xFF74A4BC),
-        child: Icon(Icons.loop),
-      ), // This trailing comma makes auto-formatting nicer for build methods.// This trailing comma makes auto-formatting nicer for build methods.
+        child: Icon(Icons.send),
+      );
+    } // This trailing comma makes auto-formatting nicer for build methods.// This trailing comma makes auto-formatting nicer for build methods.
+    ),
     );
   }
 }

@@ -34,7 +34,7 @@ void loop() {
 // Bluetooth LE  //
 ///////////////////
 BLEServer *pServer = NULL;
-BLECharacteristic * pNotifyCharacteristic;
+
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -43,15 +43,16 @@ bool oldDeviceConnected = false;
 // https://www.uuidgenerator.net/
 #define SERVICE_UUID                "e5a1c9a8-ab93-11e8-98d0-529269fb1459"
 #define CHARACTERISTIC_UUID_RX      "e5a1cda4-ab93-11e8-98d0-529269fb1459"
-#define CHARACTERISTIC_UUID_NOTIFY  "e5a1d146-ab93-11e8-98d0-529269fb1459"
 
 // Bluetooth LE Change Connect State
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
+      Serial.println("Client Connected ");
       deviceConnected = true;
     };
 
     void onDisconnect(BLEServer* pServer) {
+      Serial.println("Client Disconnected ");
       deviceConnected = false;
     }
 };
@@ -98,16 +99,12 @@ void initBLE() {
   // Create the BLE Service
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
-  // Create a BLE Characteristic
-  pNotifyCharacteristic = pService->createCharacteristic(
-                        CHARACTERISTIC_UUID_NOTIFY,
-                        BLECharacteristic::PROPERTY_NOTIFY
-                        );
   
-  pNotifyCharacteristic->addDescriptor(new BLE2902());
+ 
 
   BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
                        CHARACTERISTIC_UUID_RX,
+                      BLECharacteristic::PROPERTY_READ |
                       BLECharacteristic::PROPERTY_WRITE
                     );
 
@@ -117,7 +114,15 @@ void initBLE() {
   pService->start();
 
   // Start advertising
-  pServer->getAdvertising()->start();
+ //  pServer->getAdvertising();->start();
+
+ BLEAdvertising *pAdvertising = pServer->getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+ 
 }
 
 // Bluetooth LE loop
@@ -179,8 +184,7 @@ void loopLCDcolor() {
     if (deviceConnected) {
       char sendMessage[10];
       lastColor.toCharArray(sendMessage, 10);
-      pNotifyCharacteristic->setValue(sendMessage);
-      pNotifyCharacteristic->notify();
+    
     }
     updateColor = false;
   }
