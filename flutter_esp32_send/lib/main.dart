@@ -32,7 +32,16 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+enum ColorCommand { cmdRed, cmdBlue, cmdYellow }
+
 class _MyHomePageState extends State<MyHomePage> {
+
+
+
+// ...
+
+  ColorCommand? _character = ColorCommand.cmdBlue;
+
   final FlutterReactiveBle _ble = FlutterReactiveBle();
    StreamSubscription? _subscription;
   StreamSubscription<ConnectionStateUpdate>? _connection;
@@ -73,8 +82,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 serviceId:   Uuid.parse("e5a1c9a8-ab93-11e8-98d0-529269fb1459"),
                 characteristicId: Uuid.parse("e5a1cda4-ab93-11e8-98d0-529269fb1459"),
                 deviceId: device.id);
-            List<int> bytes = utf8.encode("BLUE");
-            await _ble.writeCharacteristicWithoutResponse(characteristic, value: bytes);
+            List<int> bytes = _character==ColorCommand.cmdBlue ?  utf8.encode("BLUE") : utf8.encode("YELLOW") ;
+            await   _ble.writeCharacteristicWithoutResponse(characteristic, value: bytes);
             /* final response = await _ble.readCharacteristic(characteristic);
             print(response);
             setState(() {
@@ -101,11 +110,12 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       temperatureStr = 'Cercando..';
     });
+    _ble.logLevel=LogLevel.verbose;
     _subscription = _ble.scanForDevices(
-        withServices: [],
-        // [Uuid.parse("181A")], // [Uuid.parse("e5a1c9a8-ab93-11e8-98d0-529269fb1459")],
+        withServices: [], // [Uuid.parse("E5A1C9A8-AB93-11E8-98D0-529269FB1459")],
         scanMode: ScanMode.lowLatency,
         requireLocationServicesEnabled: true).listen((device) {
+
       if (device.name == 'M5Stack-Color') {
         _subscription!.cancel();
         if (_connection == null) {
@@ -115,16 +125,23 @@ class _MyHomePageState extends State<MyHomePage> {
             // Handle connection state updates
             print('************* CONNECTION STATE ${connectionState.connectionState} ***************');
             if (connectionState.connectionState==DeviceConnectionState.connected) {
+
               print('************* SCRIVO ***************');
+
               final characteristic = QualifiedCharacteristic(
-                  serviceId:   Uuid.parse("e5a1c9a8-ab93-11e8-98d0-529269fb1459"),
-                  characteristicId: Uuid.parse("e5a1cda4-ab93-11e8-98d0-529269fb1459"),
-                  deviceId: device.id);
-              List<int> bytes = utf8.encode("BLUE");
-              await _ble.writeCharacteristicWithoutResponse(characteristic, value: bytes);
+                  serviceId:   Uuid.parse("E5A1C9A8-AB93-11E8-98D0-529269FB1459"),
+                  characteristicId: Uuid.parse("E5A1CDA4-AB93-11E8-98D0-529269FB1459"),
+                  deviceId: device.id,
+
+              );
+              List<int> bytes = _character==ColorCommand.cmdBlue ?  utf8.encode("BLUE") : utf8.encode("YELLOW") ;
+              await _ble.writeCharacteristicWithResponse(characteristic, value: bytes);
+
               print('************* DISCONNETTO ***************');
               _disconnect();
               print('************* DISCONNESSO ***************');
+
+
             }
           });
 
@@ -146,15 +163,39 @@ class _MyHomePageState extends State<MyHomePage> {
                 end: Alignment.bottomLeft,
                 colors: [Color(0xffffdf6f), Color(0xffeb2d95)])),
         child: Center(
-          child: Text(
-            temperatureStr,
-            style: GoogleFonts.anton(
-                textStyle: Theme.of(context)
-                    .textTheme
-                    .headline1!
-                    .copyWith(color: Colors.white)),
-          ),
+          child: Column(
+          children: <Widget>[
+            Text(
+              temperatureStr,
+              style: GoogleFonts.anton(
+                  textStyle: Theme.of(context)
+                      .textTheme
+                      .headline1!
+                      .copyWith(color: Colors.white)),
+            ),
+            ListTile(
+              title: const Text('Blue'),
+              leading: Radio(
+                value: ColorCommand.cmdBlue,
+                groupValue: _character,
+                onChanged: (ColorCommand? value) {
+                  setState(() { _character = value; });
+                },
+              ),
+            ),
+            ListTile(
+              title: const Text('Thomas Jefferson'),
+              leading: Radio(
+                value: ColorCommand.cmdYellow,
+                groupValue: _character,
+                onChanged: (ColorCommand? value) {
+                  setState(() { _character = value; });
+                },
+              ),
+            ),
+          ],
         ),
+       ),
       ),
 
       floatingActionButton: FloatingActionButton(
