@@ -56,55 +56,9 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _connectBLE() {
-    setState(() {
-      temperatureStr = 'Loading';
-    });
-    _disconnect();
-    _subscription = _ble.scanForDevices(
-        withServices:[], // [Uuid.parse("181A")], // [Uuid.parse("e5a1c9a8-ab93-11e8-98d0-529269fb1459")],
-        scanMode: ScanMode.lowLatency,
-        requireLocationServicesEnabled: true).listen((device) {
-      if (device.name == 'M5Stack-Color') {
-        print('************* ${device.name} Found! ***************');
 
-        _connection = _ble
-            .connectToDevice(
-          id: device.id,
-        )
-            .listen((connectionState) async {
-          // Handle connection state updates
-          print('************* CONNECTION STATE ***************');
-          print(connectionState.connectionState);
-          if (connectionState.connectionState ==
-              DeviceConnectionState.connected) {
-            final characteristic = QualifiedCharacteristic(
-                serviceId:   Uuid.parse("e5a1c9a8-ab93-11e8-98d0-529269fb1459"),
-                characteristicId: Uuid.parse("e5a1cda4-ab93-11e8-98d0-529269fb1459"),
-                deviceId: device.id);
-            List<int> bytes = _character==ColorCommand.cmdBlue ?  utf8.encode("BLUE") : utf8.encode("YELLOW") ;
-            await   _ble.writeCharacteristicWithoutResponse(characteristic, value: bytes);
-            /* final response = await _ble.readCharacteristic(characteristic);
-            print(response);
-            setState(() {
-              temperature = response[0];
-              temperatureStr = temperature.toString() + '°';
-            }); */
-            _disconnect();
-            print('disconnected');
-            _subscription!.cancel();
-          }
-        }, onError: (dynamic error) {
-          // Handle a possible error
-          print(error.toString());
-        });
 
-      }
-    }, onError: (error) {
-      print('error!');
-      print(error.toString());
-    });
-  }
+
 
   void _connettiBLE() {
     setState(() {
@@ -112,11 +66,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     _ble.logLevel=LogLevel.verbose;
     _subscription = _ble.scanForDevices(
-        withServices: [], // [Uuid.parse("E5A1C9A8-AB93-11E8-98D0-529269FB1459")],
+        withServices: [Uuid.parse("E5A1C9A8-AB93-11E8-98D0-529269FB1459")],
         scanMode: ScanMode.lowLatency,
         requireLocationServicesEnabled: true).listen((device) {
 
-      if (device.name == 'M5Stack-Color') {
+     // if (device.name == 'M5Stack-Color') {
         _subscription!.cancel();
         if (_connection == null) {
         print('************* ${device.name} Found! ***************');
@@ -143,10 +97,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
             }
+          }, onError: (dynamic error) {
+            // Handle a possible error
+            print(error.toString());
           });
 
-        }
+       // }
       }
+    }, onError: (error) {
+      print('error!');
+      print(error.toString());
     });
   }
 
@@ -170,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
               style: GoogleFonts.anton(
                   textStyle: Theme.of(context)
                       .textTheme
-                      .headline1!
+                      .headline3!
                       .copyWith(color: Colors.white)),
             ),
             ListTile(
