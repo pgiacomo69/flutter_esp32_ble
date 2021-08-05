@@ -25,63 +25,6 @@ class BLESender with ChangeNotifier  {
     notifyListeners();
   }
 
-  bleSendOld(String serviceUUID, String characteristicUUID, String dataToSend) async  {
-
-    messageNotify("Loading");
-    if (_subscription!=null) {
-      _subscription!.cancel();
-    }
-    _subscription = _ble.scanForDevices(
-        withServices: [Uuid.parse(serviceUUID)]).listen((device) async {
-        _subscription!.cancel();
-        messageNotify("${device.name} found");
-        if (_connection != null) {
-          try {
-            await _connection!.cancel();
-          } on Exception catch (e, _) {
-            print("Error disconnecting from a device: $e");
-            messageNotify(e.toString());
-          }
-        }
-        _connection = _ble
-            .connectToDevice(
-          id: device.id,
-        )
-            .listen((connectionState) async {
-          // Handle connection state updates
-          messageNotify("Connection State: ${connectionState.connectionState}");
-          if (connectionState.connectionState ==
-              DeviceConnectionState.connected) {
-            final characteristic = QualifiedCharacteristic(
-                serviceId: Uuid.parse(serviceUUID),
-                characteristicId: Uuid.parse(characteristicUUID),
-                deviceId: device.id);
-            messageNotify("Send: $dataToSend");
-            List<int> bytes = utf8.encode(dataToSend);
-            await _ble.writeCharacteristicWithResponse(characteristic, value: bytes);
-            messageNotify("Disconnect");
-            disconnect();
-            messageNotify("Disconnected");
-
-            // print('disconnected');
-          }
-        }, onError: (dynamic error) {
-          // Handle a possible error
-          print('error connecting!');
-          print(error.toString());
-          messageNotify(error.toString());
-
-        });
-
-    }, onError: (error) {
-      print('error scanning!');
-      print(error.toString());
-      messageNotify(error.toString());
-      notifyListeners();
-
-    });
-
-  }
 
   bleSend(String serviceUUID, String characteristicUUID, String dataToSend) async  {
 
@@ -89,19 +32,21 @@ class BLESender with ChangeNotifier  {
     if (_subscription!=null) {
       _subscription!.cancel();
     }
-    _subscription = _ble.scanForDevices(
-        withServices: [Uuid.parse(serviceUUID)]).listen((device) async {
+    /* _subscription = _ble.scanForDevices(
+        withServices: [Uuid.parse(serviceUUID)]
+         )
+        .listen((device) async {
       await _subscription!.cancel();
-      messageNotify("${device.name} found");
-     bleSendToDevice(device.id, serviceUUID, characteristicUUID, dataToSend);
+      messageNotify("${device.name} found"); */
+     bleSendToDevice('F0:08:D1:C7:3B:4E' /* device.id*/, serviceUUID, characteristicUUID, dataToSend);
 
-    }, onError: (error) {
+    /* }, onError: (error) {
       print('error scanning!');
       print(error.toString());
       messageNotify(error.toString());
       notifyListeners();
 
-    });
+    }); */
 
   }
 
