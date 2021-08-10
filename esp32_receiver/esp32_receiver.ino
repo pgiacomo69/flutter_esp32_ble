@@ -41,8 +41,11 @@ bool oldDeviceConnected = false;
 #define LOCAL_NAME                  "M5Stack-Color"
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
-#define SERVICE_UUID                "e5a1c9a8-ab93-11e8-98d0-529269fb1459"
-#define CHARACTERISTIC_UUID_RX      "e5a1cda4-ab93-11e8-98d0-529269fb1459"
+// #define SERVICE_UUID                "e5a1c9a8-ab93-11e8-98d0-529269fb1459"
+// #define CHARACTERISTIC_UUID_RX      "e5a1cda4-ab93-11e8-98d0-529269fb1459"
+#define SERVICE_UUID                "f830075f-cc1e-4bbf-b05f-03b96a84221d"
+#define CHARACTERISTIC_UUID_RX      "843e9a63-f917-4978-b1b6-33f5f660270b"
+
 
 // Bluetooth LE Change Connect State
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -98,6 +101,7 @@ void initBLE() {
 
   // Create the BLE Service
   BLEService *pService = pServer->createService(SERVICE_UUID);
+  
 
   
  
@@ -128,6 +132,7 @@ void initBLE() {
 // Bluetooth LE loop
 void loopBLE() {
     // disconnecting
+    Serial.println("Start Loop");
     if (!deviceConnected && oldDeviceConnected) {
         delay(500); // give the bluetooth stack the chance to get things ready
         pServer->startAdvertising(); // restart advertising

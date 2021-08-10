@@ -29,8 +29,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons:
   flutter_reactive_ble:
+  qr_code_scanner: ^1.0.0-alpha.1
   google_fonts:
   provider:
+  flutter_bloc:
+  basic_utils:
 
 dev_dependencies:
   flutter_test:
